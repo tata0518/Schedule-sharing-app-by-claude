@@ -31,6 +31,8 @@ header button{background:#fff;border:1px solid var(--bd);padding:4px 8px;border-
 .cell.today .dn{background:#333;color:#fff;border-radius:8px;padding:1px 4px;align-self:flex-start}
 .sum{font-size:8.5px;line-height:1.1;margin-top:1px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;word-break:break-all}
 .sum.p{-webkit-line-clamp:3}.sum.m{-webkit-line-clamp:2;color:#666}
+.sum .ptag{font-size:8px;padding:0 2px;margin-right:2px;line-height:1.2}
+
 /* 週 */
 #weekBox{display:flex;flex-direction:column;flex:1;gap:2px;overflow:hidden}
 .wrow{display:flex;background:#fff;border:1px solid var(--bd);border-radius:4px;flex:1;overflow:hidden;min-height:0}
@@ -339,8 +341,8 @@ function renderMonth() {
         cell.onclick = () => openDetail(dt);
         cell.innerHTML = `
           <div class="dn">${dt.getDate()}</div>
-          <div class="sum p">${dd.chita?.plan ? 'ち:' + esc(dd.chita.plan) : ''}</div>
-          <div class="sum p">${dd.akita?.plan ? 'あ:' + esc(dd.akita.plan) : ''}</div>
+          <div class="sum p">${dd.chita?.plan ? '<span class="ptag chita">ち</span>' + esc(dd.chita.plan) : ''}</div>
+          <div class="sum p">${dd.akita?.plan ? '<span class="ptag akita">あ</span>' + esc(dd.akita.plan) : ''}</div>
           <div class="sum m">${dd.menu ? 'メ:' + esc(dd.menu) : ''}</div>`;
       }
       row.appendChild(cell);
