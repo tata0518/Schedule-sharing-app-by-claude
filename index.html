@@ -14,17 +14,17 @@ iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;ba
 iframe.active{display:block}
 
 /* ② nav の高さを固定しつつ、下部にセーフエリア分の余白を追加する */
-nav{
-  display:flex;
-  height:64px; 
-  /* ウェブアプリの時だけ自動で下部に余白を追加（通常ブラウザでは0pxになります） */
+nav {
+  display: flex;
+  /* height: 64px; を削除し、min-heightに変更 */
+  min-height: 64px;
+  /* 高さを固定せず、内容＋セーフエリア分を自動で確保する */
   padding-bottom: env(safe-area-inset-bottom);
-  /* padding分を含めて高さを調整したい場合は box-sizing が効いているのでそのままでOKですが、
-     ボタンを縦に少し大きくしたい場合は height を 64px + α に調整してください */
-  background:#fff;
-  border-top:1px solid #ccc;
-  flex-shrink:0;
+  background: #fff;
+  border-top: 1px solid #ccc;
+  flex-shrink: 0;
 }
+
 
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:none;color:#777;font-size:12px;cursor:pointer}
 .tab span{font-size:20px;margin-bottom:2px}
