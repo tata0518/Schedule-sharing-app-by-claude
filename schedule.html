@@ -396,7 +396,7 @@ function renderWeek() {
       <div class="wdata">
         <div class="prow"><span class="ptag chita">ちーた</span><div class="ptext"><span>${personText(c, hol)}</span></div></div>
         <div class="prow"><span class="ptag akita">あきた</span><div class="ptext"><span>${personText(a, hol)}</span></div></div>
-        <div class="prow" style="font-size:11px;color:#666"><b style="flex-shrink:0">メニュー:</b><div class="ptext"><span>${esc(dd.menu) || '未設定'}</span></div></div>
+        <div class="prow" style="font-size:11px;color:#666"><b style="flex-shrink:0">メニュー:</b><div class="ptext"><span>${esc(dd.menu) || '-'}</span></div></div>
       </div>
       <button class="wedit" aria-label="編集">✍🏻</button>`;
     row.querySelector('.wedit').onclick = () => openEdit(dt);
