@@ -16,11 +16,10 @@ iframe.active{display:block}
 nav {
   display: flex;
   /* タブバー全体の高さをしっかり持たせる（ボタンの高さ＋下部スペース） */
-  height: 102px;
+  height: 92px;
   /* 下側に固定の余白（スペース）を強制的に入れる */
-  padding-bottom: 38px;
+  padding-bottom: 28px;
   background: #fff;
-  border-top: 1px solid #ccc;
   flex-shrink: 0;
 }
 
@@ -35,8 +34,8 @@ nav {
 
 
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:none;color:#777;font-size:12px;cursor:pointer}
-.tab span{font-size:20px;margin-bottom:2px}
-.tab.sep{border-left:1px solid #ddd}
+.tab span{font-size:18px;margin-bottom:2px}
+.tab.sep{border-left:none solid #ddd}
 .tab.active{color:#333;font-weight:bold;background:#fafafa}
 </style>
 </head>
