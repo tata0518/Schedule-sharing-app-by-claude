@@ -83,7 +83,6 @@ header button{background:#fff;border:1px solid var(--bd);padding:4px 8px;border-
     </div>
     <div id="title"></div>
     <div class="hr">
-      <button class="gray" id="inlineBtn" onclick="toggleInline()" style="display:none">部分編集</button>
       <button class="dark" id="batchBtn" onclick="openBatch()" style="display:none">一括編集</button>
     </div>
   </header>
@@ -134,7 +133,6 @@ const PEOPLE = [CH, AK];
 
 let tab = 'month';
 let cur = new Date();
-let inlineEditing = false;
 let data = {};          // { "2026-10-5": {...} }
 let busy = false;
 let batch = null;       // 一括編集の作業用データ
@@ -292,27 +290,22 @@ function render() { tab === 'month' ? renderMonth() : renderWeek(); }
 
 function switchTab(t) {
   tab = t;
-  inlineEditing = false;
   $('tabMonth').classList.toggle('active', t === 'month');
   $('tabWeek').classList.toggle('active', t === 'week');
   document.querySelectorAll('.tab').forEach((el, i) => el.classList.toggle('active', (i === 0) === (t === 'month')));
   const week = t === 'week';
   $('batchBtn').style.display = week ? 'block' : 'none';
-  $('inlineBtn').style.display = week ? 'block' : 'none';
-  $('inlineBtn').textContent = '部分編集';
   $('todayBtn').textContent = week ? '今週' : '今月';
   render();
 }
 
 function changePeriod(dir) {
-  if (inlineEditing) return toast('「完了」を押してから移動してください');
   if (tab === 'month') cur = new Date(cur.getFullYear(), cur.getMonth() + dir, 1);
   else cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + dir * 7);
   render();
 }
 
 function resetToCurrent() {
-  if (inlineEditing) return toast('「完了」を押してから移動してください');
   cur = new Date();
   render();
 }
@@ -391,21 +384,12 @@ function renderWeek() {
     const row = document.createElement('div');
     row.className = 'wrow';
 
-    let inner;
-    if (!inlineEditing) {
-      inner = `
-        <div class="prow"><span class="ptag chita">ちーた</span><div class="ptext"><span>${personText(c, hol)}</span></div></div>
-        <div class="prow"><span class="ptag akita">あきた</span><div class="ptext"><span>${personText(a, hol)}</span></div></div>
-        <div class="prow" style="font-size:11px;color:#666"><b style="flex-shrink:0">メニュー:</b><div class="ptext"><span>${esc(dd.menu) || '未設定'}</span></div></div>`;
-    } else {
-      inner = `
-        <div class="prow"><span class="ptag chita">ち</span><div class="ptext"><div class="eline">${editLine('inline', k, CH, c, hol)}</div></div></div>
-        <div class="prow"><span class="ptag akita">あ</span><div class="ptext"><div class="eline">${editLine('inline', k, AK, a, hol)}</div></div></div>
-        <div class="prow" style="font-size:11px;color:#666"><b style="flex-shrink:0">メ:</b><div class="ptext"><div class="eline"><input id="inline_${k}_menu" value="${esc(dd.menu)}" placeholder="夕食メニュー"></div></div></div>`;
-    }
+    const inner = `
+      <div class="prow"><span class="ptag chita">ちーた</span><div class="ptext"><span>${personText(c, hol)}</span></div></div>
+      <div class="prow"><span class="ptag akita">あきた</span><div class="ptext"><span>${personText(a, hol)}</span></div></div>
+      <div class="prow" style="font-size:11px;color:#666"><b style="flex-shrink:0">メニュー:</b><div class="ptext"><span>${esc(dd.menu) || '未設定'}</span></div></div>`;
     row.innerHTML = `<div class="wdate ${cls}"><span>${dt.getMonth() + 1}/${dt.getDate()}</span><span>(${DOW[dt.getDay()]})</span></div>
-      <div class="wdata" ${inlineEditing ? 'style="gap:4px"' : ''}>${inner}</div>`;
-    box.appendChild(row);
+      <div class="wdata">${inner}</div>`;
   });
 }
 
@@ -432,29 +416,6 @@ function collectDay(mode, key, old) {
 function isEmptyItem(it) {
   const t = p => [p?.plan, p?.departTime, p?.returnTime].some(v => v);
   return !t(it.chita) && !t(it.akita) && !it.menu && !it.memo && typeof it.isHolidayOverride !== 'boolean';
-}
-
-// ============ 部分編集(週表示) ============
-async function toggleInline() {
-  if (busy) return;
-  const btn = $('inlineBtn');
-  if (!inlineEditing) {
-    inlineEditing = true;
-    btn.textContent = '完了';
-    return renderWeek();
-  }
-  const keys = [];
-  weekDates(mondayOf(cur)).forEach(dt => {
-    const k = keyOf(dt);
-    const item = collectDay('inline', k, data[k]);
-    if (!data[k] && isEmptyItem(item)) return;
-    data[k] = item;
-    keys.push(k);
-  });
-  inlineEditing = false;
-  btn.textContent = '部分編集';
-  renderWeek();
-  await saveKeys(keys, null);
 }
 
 // ============ 詳細 ============
@@ -597,7 +558,7 @@ let sx = 0;
 const content = $('contentContainer') || $('content');
 content.addEventListener('touchstart', e => { sx = e.changedTouches[0].screenX; }, { passive: true });
 content.addEventListener('touchend', e => {
-  if (inlineEditing || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
   const dx = e.changedTouches[0].screenX - sx;
   if (dx < -50) changePeriod(1);
   else if (dx > 50) changePeriod(-1);
@@ -606,7 +567,7 @@ content.addEventListener('touchend', e => {
 // アプリに戻ってきたとき、編集中でなければ最新データを取り直す(2人間の同期)
 document.addEventListener('visibilitychange', () => {
   const modalOpen = document.querySelector('.overlay.open');
-  if (document.visibilityState === 'visible' && !busy && !inlineEditing && !modalOpen) loadData(true);
+  if (document.visibilityState === 'visible' && !busy && !modalOpen) loadData(true);
 });
 
 switchTab('month');
