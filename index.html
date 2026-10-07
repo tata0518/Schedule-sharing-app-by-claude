@@ -15,17 +15,25 @@ iframe.active{display:block}
 
 nav {
   display: flex;
-  /* タブバー自体のボタンが並ぶメインの高さ（例：64px） */
-  height: 64px;
+  /* タブバー自体の高さを少しゆとりを持たせて高めにする（例：72px） */
+  height: 72px;
   
-  /* 下側の余白（ホームバーや角の丸みに被らないための厚み）を直接指定する */
-  padding-bottom: 24px; 
+  /* デフォルト（通常ブラウザ）では下の余白は0 */
+  padding-bottom: 0px;
   
   background: #fff;
   border-top: 1px solid #ccc;
   flex-shrink: 0;
 }
 
+/* ホーム画面に追加されたウェブアプリ（PWA）として開かれているときだけ適用する */
+@media all and (display-mode: standalone) {
+  nav {
+    /* ボックスサイズに含めつつ、セーフエリア分＋ボタンを押し上げる高さを確保 */
+    height: calc(64px + env(safe-area-inset-bottom, 20px));
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+}
 
 
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:none;color:#777;font-size:12px;cursor:pointer}
