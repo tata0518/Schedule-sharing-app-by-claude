@@ -358,8 +358,8 @@ function renderMonth() {
 // ============ 週表示 ============
 function personText(p, hol) {
   const L = (name, v) => `<span class="lbl">${name}</span>${esc(v) || '-'}`;
-  if (hol) return `${esc(p.plan)} / ${L('出', p.departTime)} ${L('帰', p.returnTime)} / ${L('昼', p.lunch)} ${L('夕', p.dinner)}`;
-  return p.plan ? `${esc(p.plan)} / ${L('帰', p.returnTime)} / ${L('夕', p.dinner)}` : '未登録';
+  if (hol) return `${esc(p.plan)} ${L('出', p.departTime)} ${L('帰', p.returnTime)} ${L('昼', p.lunch)} ${L('夕', p.dinner)}`;
+  return p.plan ? `${esc(p.plan)} ${L('帰', p.returnTime)} ${L('夕', p.dinner)}` : '-';
 }
 
 // 入力欄(部分編集・一括編集で共通)。ID = モード_日付_人_項目
