@@ -14,22 +14,18 @@ iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;ba
 iframe.active{display:block}
 
 nav {
-  display: flex;
-  /* タブバー全体の高さをしっかり持たせる（ボタンの高さ＋下部スペース） */
-  height: 92px;
-  /* 下側に固定の余白（スペース）を強制的に入れる */
-  padding-bottom: 28px;
+  position: absolute;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  left: 16px;
+  right: 16px;
+  height: 64px;
   background: #fff;
-  flex-shrink: 0;
-}
-
-/* ホーム画面に追加されたウェブアプリ（PWA）として開かれているときだけ適用する */
-@media all and (display-mode: standalone) {
-  nav {
-    /* ボックスサイズに含めつつ、セーフエリア分＋ボタンを押し上げる高さを確保 */
-    height: calc(64px + env(safe-area-inset-bottom, 20px));
-    padding-bottom: env(safe-area-inset-bottom, 20px);
-  }
+  border-radius: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 1000;
 }
 
 
