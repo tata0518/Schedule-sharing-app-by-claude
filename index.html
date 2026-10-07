@@ -15,22 +15,14 @@ iframe.active{display:block}
 
 nav {
   display: flex;
-  height: 64px;
+  /* タブバー全体の高さをしっかり持たせる（ボタンの高さ＋下部スペース） */
+  height: 102px;
+  /* 下側に固定の余白（スペース）を強制的に入れる */
+  padding-bottom: 38px;
   background: #fff;
   border-top: 1px solid #ccc;
   flex-shrink: 0;
 }
-
-/* ホーム画面に追加されたウェブアプリ（PWA）として起動しているときだけ適用する */
-@media all and (display-mode: standalone) {
-  nav {
-    /* 下部の高さをボタン分（64px）＋ホームバー用の余白（28px）に強制的に広げる */
-    height: 92px; 
-    /* 下側にしっかりとした余白（下駄）を履かせる */
-    padding-bottom: 28px; 
-  }
-}
-
 
 /* ホーム画面に追加されたウェブアプリ（PWA）として開かれているときだけ適用する */
 @media all and (display-mode: standalone) {
