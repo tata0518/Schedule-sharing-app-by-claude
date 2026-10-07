@@ -34,6 +34,9 @@
             touch-action: pan-x;
             overscroll-behavior-y: none;
         }
+        body.embedded nav { display: none; }
+        body.embedded { padding-bottom: 1rem !important; }
+
     </style>
     <style>
     /* テーブルの通常の横線を消す */
@@ -739,6 +742,20 @@
                 resultText.innerHTML = `現在、精算の差額はありません`;
             }
         }
+        // 親ページ(タブ統合)との連携
+        if (window.parent !== window) {
+            document.body.classList.add('embedded');
+            const _origSwitchTab = switchTab;
+            switchTab = function (t) {
+                _origSwitchTab(t);
+                window.parent.postMessage({ type: 'tabChanged', tab: t }, '*');
+            };
+            window.addEventListener('message', e => {
+                if (e.source !== window.parent || !e.data || e.data.type !== 'tab') return;
+                switchTab(e.data.tab);
+            });
+        }
+
     </script>
 </body>
 </html>
