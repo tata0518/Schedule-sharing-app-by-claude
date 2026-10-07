@@ -39,23 +39,28 @@
 
     </style>
     <style>
-    /* テーブルの通常の横線を消す */
-    #chita-card tbody tr, #akita-card tbody tr {
-        border-bottom: none !important;
-    }
-    /* 通常行のシマシマ（ただし固定費行を除外する） */
-    #chita-card tbody tr:not(.bg-emerald-100):nth-child(even), 
-    #akita-card tbody tr:not(.bg-emerald-100):nth-child(even) {
-        background-color: #f9fafb; /* 薄いグレー */
-    }
-    #chita-card tbody tr:not(.bg-emerald-100):nth-child(odd), 
-    #akita-card tbody tr:not(.bg-emerald-100):nth-child(odd) {
-        background-color: #ffffff; /* 白 */
-    }
-    /* ▼ リストのヘッダー行（th）の文字を普通の太さにする ▼ */
-    #chita-card th, #akita-card th {
-        font-weight: normal !important;
-    }
+        /* テーブルの通常の横線を消す */
+        #chita-card tbody tr, #akita-card tbody tr {
+            border-bottom: none !important;
+        }
+        /* 通常行のシマシマ（ただし固定費行を除外する） */
+        #chita-card tbody tr:not(.bg-emerald-100):nth-child(even), 
+        #akita-card tbody tr:not(.bg-emerald-100):nth-child(even) {
+            background-color: #f9fafb; /* 薄いグレー */
+        }
+        #chita-card tbody tr:not(.bg-emerald-100):nth-child(odd), 
+        #akita-card tbody tr:not(.bg-emerald-100):nth-child(odd) {
+            background-color: #ffffff; /* 白 */
+        }
+        /* ▼ リストのヘッダー行（th）の文字を普通の太さにする ▼ */
+        #chita-card th, #akita-card th {
+            font-weight: normal !important;
+        }
+
+        /* ↓ ここに精算画面の下部余白を追加します ↓ */
+        .max-w-xl.mx-auto {
+            padding-bottom: 90px;
+        }
     </style>
 </head>
     
