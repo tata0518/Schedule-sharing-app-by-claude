@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <link rel="icon" href="./favicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="./favicon.png">
+
+    <meta charset="UTF-8">
+    <!-- スマホでの自動ズーム・ダブルタップズームを防止 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>精算管理アプリ</title>
+ 
+    <!-- OGPタグ -->
+    <meta property="og:title" content="精算管理アプリ（あきた＆ちーた）">
+    <meta property="og:description" content="2人の日々の支払いや精算を簡単に管理・共有できるアプリです。">
+    <meta property="og:type" content="website">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 入力フォーム選択時の自動ズームのみ防止 */
+        input:not([type="button"]):not([type="submit"]), select {
+            font-size: 16px !important;
+        }
+    
+        /* 入力タブ時のスクロール＆バウンス（縦揺れ）を完全に防止 */
+        body.no-scroll {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overscroll-behavior: none;
+        }
+    
+        #view-input {
+            touch-action: pan-x;
+            overscroll-behavior-y: none;
+        }
+    </style>
+    <style>
+    /* テーブルの通常の横線を消す */
+    #chita-card tbody tr, #akita-card tbody tr {
+        border-bottom: none !important;
+    }
+    /* 通常行のシマシマ（ただし固定費行を除外する） */
+    #chita-card tbody tr:not(.bg-emerald-100):nth-child(even), 
+    #akita-card tbody tr:not(.bg-emerald-100):nth-child(even) {
+        background-color: #f9fafb; /* 薄いグレー */
+    }
+    #chita-card tbody tr:not(.bg-emerald-100):nth-child(odd), 
+    #akita-card tbody tr:not(.bg-emerald-100):nth-child(odd) {
+        background-color: #ffffff; /* 白 */
+    }
+    /* ▼ リストのヘッダー行（th）の文字を普通の太さにする ▼ */
+    #chita-card th, #akita-card th {
+        font-weight: normal !important;
+    }
+    </style>
+</head>
+    
+<body class="bg-gray-50 text-gray-800 pb-24 touch-manipulation no-scroll">
+
+    <div class="max-w-xl mx-auto p-4">
+        <!-- 動的ヘッダー -->
+        <header class="mb-4 text-center">
+            <div class="relative flex items-center justify-center gap-2">
+                <button type="button" id="prev-month-btn" onclick="changeMonth(-1)" class="text-gray-600 hover:text-gray-900 font-bold p-1 text-base rounded" style="display: none;" title="前月">
+                    ◀︎
+                </button>
+                
+                <h1 id="header-title" class="text-xl font-bold text-gray-700">入力</h1>
+                
+                <button type="button" id="next-month-btn" onclick="changeMonth(1)" class="text-gray-600 hover:text-gray-900 font-bold p-1 text-base rounded" style="display: none;" title="次月">
+                    ▶︎
+                </button>
+
+                <!-- ⚙️ 設定ボタン -->
+                <button type="button" id="settings-btn" onclick="openSettingsModal()" class="absolute right-0 text-gray-600 hover:text-gray-900 p-1 text-lg" style="display: none;" title="設定">
+                    ⚙️
+                </button>
+            </div>
+
+            <p id="header-subtitle" class="text-xs text-gray-500 mt-1">出費を新規登録します。</p>
+            
+            <!-- サブナビゲーション -->
+            <div id="month-nav" class="flex items-center justify-center gap-3 mt-3 px-2" style="display: none;">
+                <button type="button" id="current-month-btn" onclick="goCurrentMonth()" class="text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition">
+                    今月に戻る
+                </button>
+                <button type="button" onclick="openResultModal()" class="text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg shadow-sm transition">
+                    精算結果を見る
+                </button>
+            </div>
+        </header>
+
+        <!-- ローディング表示 -->
+        <div id="loading" class="text-center w-full my-4">
+            <img src="korokuri4.png" alt="コロクリ" class="inline-block rounded-md" width="150" height="30">
+        </div>
+        
+        <div id="swipe-container">
+            <!-- 【画面1】新規入力画面 -->
+            <div id="view-input" class="space-y-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm space-y-3">
+                    <h2 class="text-xs font-bold text-blue-600 mb-2">新規データ登録画面</h2>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">日付</label>
+                        <div class="relative">
+                            <input type="date" id="date" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onchange="document.getElementById('date-display').value = this.value;">
+                            <input type="text" id="date-display" readonly class="w-full box-border border rounded-lg px-3 py-2 text-sm bg-white pointer-events-none" placeholder="日付を選択">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">項目名</label>
+                        <select id="title" class="w-full border rounded-lg p-2 text-sm bg-white">
+                            <option value="食費">食費</option>
+                            <option value="日用品">日用品</option>
+                            <option value="雑貨">雑貨</option>
+                            <option value="交際費">交際費</option>
+                            <option value="外食">外食</option>
+                            <option value="固定費">固定費</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">支払った人</label>
+                        <select id="payer" class="w-full border rounded-lg p-2 text-sm bg-white">
+                            <option value="ちーた">ちーた</option>
+                            <option value="あきた">あきた</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">金額 (円)</label>
+                        <input type="number" id="amount" placeholder="0" class="w-full border rounded-lg p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">相手への請求割合</label>
+                        <select id="ratio" class="w-full border rounded-lg p-2 text-sm bg-white">
+                            <option value="0.5" selected>50%</option>
+                            <option value="1">100%</option>
+                            <option value="0.33333">33%</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">支払い先など</label>
+                        <input type="text" id="memo" placeholder="例：マルエツ中野若宮店" class="w-full border rounded-lg p-2 text-sm">
+                    </div>
+                    
+                    <!-- 登録ボタン -->
+                    <button type="button" onclick="saveItem(false)" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow hover:bg-blue-700 transition text-sm">決定</button>
+                </div>
+            </div>
+
+            <!-- 【画面2】一覧・精算結果画面 -->
+            <div id="view-list" class="space-y-6" style="display: none;">
+
+                <!-- ちーたの表 -->
+                <div id="chita-card" class="bg-white rounded-xl shadow-sm overflow-hidden border border-red-100">
+                    <div class="bg-red-50 px-2 pb-1 border-b border-red-100">
+                        <span class="font-bold text-xs text-red-700">ちーたの支払い</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse" style="font-size: 11px;">
+                            <thead>
+                                <tr class="bg-gray-50 border-b text-gray-600">
+                                    <th class="py-1 px-0.5 whitespace-nowrap">日付</th>
+                                    <th class="py-1 px-0.5 whitespace-nowrap">項目</th>
+                                    <th class="py-1 px-0.5 whitespace-nowrap">金額</th>
+                                    <th class="py-1 px-0.5 whitespace-nowrap">割合</th>
+                                    <th class="py-1 px-0.5 whitespace-nowrap">請求額</th>
+                                    <th class="py-1 px-0.5 w-full">支払い先など</th>
+                                    <th class="py-1 px-0.5 text-center whitespace-nowrap w-1"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="chita-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="bg-gray-50 px-2 py-1 border-t text-right text-xs">
+                        請求額合計: <span id="chita-total" class="font-bold text-red-600 text-sm">¥0</span>
+                    </div>
+                </div>
+
+                <!-- あきたの表 -->
+                <div id="akita-card" class="bg-white rounded-xl shadow-sm overflow-hidden border border-blue-100">
+                    <div class="bg-blue-50 px-2 pb-1 border-b border-blue-100">
+                        <span class="font-bold text-xs text-blue-700">あきたの支払い</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse" style="font-size: 11px;">
+                            <thead>
+                                <tr class="bg-gray-50 border-b text-gray-600">
+                                    <th class="py-1 px-0.5 whitespace-nowrap">日付</th>
+                                    <th class="py-1 px-0.5 whitespace-nowrap">項目</th>
+                                    <th class="py-1 px-0.5 whitespace-nowrap">金額</th>
+                                    <th class="py-1 px-0.5 whitespace-nowrap">割合</th>
+                                    <th class="py-1 px-0.5 whitespace-nowrap">請求額</th>
+                                    <th class="py-1 px-0.5 w-full">支払い先など</th>
+                                    <th class="py-1 px-0.5 text-center whitespace-nowrap w-1"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="akita-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="bg-gray-50 px-2 py-1 border-t text-right text-xs">
+                        請求額合計: <span id="akita-total" class="font-bold text-blue-600 text-sm">¥0</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 設定用ポップアップ（モーダル） -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" style="display: none;">
+        <div class="bg-white w-full max-w-sm rounded-xl p-5 shadow-xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h2 class="text-xs font-bold text-gray-700">表示設定</h2>
+                <button type="button" onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-600 font-bold text-base px-1">&times;</button>
+            </div>
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-2">上に表示する方</label>
+                <select id="display-order-select" class="w-full border rounded-lg p-2 text-sm bg-white">
+                    <option value="chita">ちーた</option>
+                    <option value="akita">あきた</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-2">行の幅</label>
+                <select id="row-height-select" class="w-full border rounded-lg p-2 text-sm bg-white">
+                    <option value="normal">ふつう</option>
+                    <option value="wide">広い</option>
+                </select>
+            </div>
+
+            <button type="button" onclick="saveSettings()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl text-xs transition">
+                保存する
+            </button>
+        </div>
+    </div>
+
+    <!-- 精算結果ポップアップ（モーダル） -->
+    <div id="result-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" style="display: none;">
+        <div class="bg-white w-full max-w-sm rounded-xl p-5 shadow-xl space-y-4 text-center">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h2 class="text-xs font-bold text-rose-700">精算結果</h2>
+                <button type="button" onclick="closeResultModal()" class="text-gray-400 hover:text-gray-600 font-bold text-base px-1">&times;</button>
+            </div>
+            
+            <div class="bg-rose-50 border border-rose-200 p-4 rounded-xl text-center space-y-1 shadow-sm">
+                <span class="text-xs text-rose-700 font-bold" id="result-modal-month-title">精算結果</span>
+                <div id="result-text" class="text-base font-bold text-gray-800">計算中...</div>
+            </div>
+
+            <button type="button" onclick="closeResultModal()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 rounded-xl text-xs transition">
+                閉じる
+            </button>
+        </div>
+    </div>
+
+    <!-- 編集用ポップアップ（モーダル） -->
+    <div id="edit-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" style="display: none;">
+        <div class="bg-white w-full max-w-md rounded-xl p-4 shadow-xl space-y-3 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h2 class="text-xs font-bold text-blue-600">データ修正画面</h2>
+                <button type="button" onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 font-bold text-base px-1">&times;</button>
+            </div>
+            
+            <input type="hidden" id="edit-id" value="">
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">日付</label>
+                <div class="relative">
+                    <input type="date" id="modal-date" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onchange="document.getElementById('modal-date-display').value = this.value;">
+                    <input type="text" id="modal-date-display" readonly class="w-full box-border border rounded-lg px-3 py-2 text-sm bg-white pointer-events-none" placeholder="日付を選択">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">項目名</label>
+                <select id="modal-title" class="w-full border rounded-lg p-2 text-sm bg-white">
+                    <option value="食費">食費</option>
+                    <option value="日用品">日用品</option>
+                    <option value="雑貨">雑貨</option>
+                    <option value="交際費">交際費</option>
+                    <option value="外食">外食</option>
+                    <option value="固定費">固定費</option>
+                    <option value="その他">その他</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">支払った人</label>
+                <select id="modal-payer" class="w-full border rounded-lg p-2 text-sm bg-white">
+                    <option value="ちーた">ちーた</option>
+                    <option value="あきた">あきた</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">金額 (円)</label>
+                <input type="number" id="modal-amount" placeholder="0" class="w-full border rounded-lg p-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">相手への請求割合</label>
+                <select id="modal-ratio" class="w-full border rounded-lg p-2 text-sm bg-white">
+                    <option value="0.5" selected>50%</option>
+                    <option value="1">100%</option>
+                    <option value="0.33333">33%</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">支払い先など</label>
+                <input type="text" id="modal-memo" placeholder="例：マルエツ中野若宮店" class="w-full border rounded-lg p-2 text-sm">
+            </div>
+            
+            <div class="space-y-2 pt-1">
+                <!-- 更新ボタン -->
+                <button type="button" onclick="saveItem(true)" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl shadow hover:bg-blue-700 transition text-sm">更新</button>
+                <!-- 削除ボタン -->
+                <button type="button" onclick="deleteCurrentEditItem()" class="w-full bg-white border border-red-500 text-red-500 font-bold py-2.5 rounded-xl hover:bg-red-50 transition text-sm">削除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LINE風 下部固定タブバー -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg flex justify-around py-2 z-40 max-w-xl mx-auto">
+        <button type="button" id="tab-input" onclick="switchTab('input')" class="flex-1 flex flex-col items-center justify-center py-1 text-blue-600 font-bold transition">
+            <svg class="w-6 h-6 mb-0.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <span class="text-[10px] pointer-events-none">入力</span>
+        </button>
+        <button type="button" id="tab-list" onclick="switchTab('list')" class="flex-1 flex flex-col items-center justify-center py-1 text-gray-400 font-bold transition">
+            <svg class="w-6 h-6 mb-0.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012-2m-6 9l2 2 4-4"></path></svg>
+            <span class="text-[10px] pointer-events-none">一覧・精算</span>
+        </button>
+    </nav>
+
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyor_lx9N-JZJuXknKI1DLCboIOK39f8WlX6R8s47e4n2jkf9vzMbauCDqYAoRUig/exec"; 
+        let items = [];
+
+        // 設定の管理
+        let displayOrder = localStorage.getItem('displayOrder') || 'chita';
+        let rowHeight = localStorage.getItem('rowHeight') || 'normal';
+
+        // 現在選択中の年月管理
+        const now = new Date();
+        let currentYear = now.getFullYear();
+        let currentMonth = now.getMonth() + 1;
+
+        document.body.classList.add('no-scroll');
+        fetchData();
+
+        // 設定モーダル制御
+        function openSettingsModal() {
+            document.getElementById('display-order-select').value = displayOrder;
+            document.getElementById('row-height-select').value = rowHeight;
+            document.getElementById('settings-modal').style.display = 'flex';
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+
+        function saveSettings() {
+            displayOrder = document.getElementById('display-order-select').value;
+            rowHeight = document.getElementById('row-height-select').value;
+            localStorage.setItem('displayOrder', displayOrder);
+            localStorage.setItem('rowHeight', rowHeight);
+            closeSettingsModal();
+            renderList();
+        }
+
+        function updateHeaderUI(tabName) {
+            const headerTitle = document.getElementById('header-title');
+            const headerSubtitle = document.getElementById('header-subtitle');
+            const monthNav = document.getElementById('month-nav');
+            const prevBtn = document.getElementById('prev-month-btn');
+            const nextBtn = document.getElementById('next-month-btn');
+            const settingsBtn = document.getElementById('settings-btn');
+
+            if (tabName === 'input') {
+                headerTitle.innerText = '入力';
+                headerSubtitle.innerText = '出費を新規登録します。';
+                monthNav.style.display = 'none';
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+                settingsBtn.style.display = 'none';
+            } else {
+                headerTitle.innerText = `${currentMonth}月精算一覧`;
+                headerSubtitle.innerText = `${currentYear}年${currentMonth}月の精算データの一覧です。`;
+                
+                monthNav.style.display = 'flex';
+                prevBtn.style.display = 'inline-block';
+                nextBtn.style.display = 'inline-block';
+                settingsBtn.style.display = 'block';
+
+                const today = new Date();
+                const isCurrentMonth = (currentYear === today.getFullYear() && currentMonth === (today.getMonth() + 1));
+                const currentMonthBtn = document.getElementById('current-month-btn');
+
+                if (isCurrentMonth) {
+                    currentMonthBtn.disabled = true;
+                    currentMonthBtn.className = "text-xs font-bold bg-gray-100 text-gray-400 border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm cursor-not-allowed";
+                } else {
+                    currentMonthBtn.disabled = false;
+                    currentMonthBtn.className = "text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 px-3 py-1.5 rounded-lg shadow-sm cursor-pointer transition";
+                }
+            }
+        }
+
+        function switchTab(tabName) {
+            const viewInput = document.getElementById('view-input');
+            const viewList = document.getElementById('view-list');
+            const tabInput = document.getElementById('tab-input');
+            const tabList = document.getElementById('tab-list');
+        
+            updateHeaderUI(tabName);
+        
+            if (tabName === 'input') {
+                viewInput.style.display = 'block';
+                viewList.style.display = 'none';
+                tabInput.className = "flex-1 flex flex-col items-center justify-center py-1 text-blue-600 font-bold transition";
+                tabList.className = "flex-1 flex flex-col items-center justify-center py-1 text-gray-400 font-bold transition";
+        
+                document.body.classList.add('no-scroll');
+            } else {
+                viewInput.style.display = 'none';
+                viewList.style.display = 'block';
+                tabList.className = "flex-1 flex flex-col items-center justify-center py-1 text-blue-600 font-bold transition";
+                tabInput.className = "flex-1 flex flex-col items-center justify-center py-1 text-gray-400 font-bold transition";
+        
+                document.body.classList.remove('no-scroll');
+        
+                fetchData();
+            }
+        }
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth > 12) {
+                currentMonth = 1;
+                currentYear++;
+            } else if (currentMonth < 1) {
+                currentMonth = 12;
+                currentYear--;
+            }
+            updateHeaderUI('list');
+            renderList();
+        }
+
+        function goCurrentMonth() {
+            const today = new Date();
+            currentYear = today.getFullYear();
+            currentMonth = today.getMonth() + 1;
+            updateHeaderUI('list');
+            renderList();
+        }
+
+        function openResultModal() {
+            document.getElementById('result-modal-month-title').innerText = `${currentYear}年${currentMonth}月 精算結果`;
+            document.getElementById('result-modal').style.display = 'flex';
+        }
+
+        function closeResultModal() {
+            document.getElementById('result-modal').style.display = 'none';
+        }
+
+        function fetchData() {
+            if (GAS_URL.includes("YOUR_WEB_APP_URL")) return;
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
+
+            fetch(GAS_URL)
+                .then(res => res.json())
+                .then(data => {
+                    items = data.map(item => {
+                        let formattedDate = '';
+                        if (item.date) {
+                            const d = new Date(item.date);
+                            if (!isNaN(d.getTime())) {
+                                const year = d.getUTCFullYear();
+                                const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+                                const day = String(d.getUTCDate()).padStart(2, '0');
+                                formattedDate = `${year}-${month}-${day}`;
+                            } else {
+                                formattedDate = String(item.date).split('T')[0];
+                            }
+                        }
+
+                        return {
+                            id: String(item.id),
+                            date: formattedDate,
+                            title: item.title,
+                            payer: item.payer,
+                            amount: Number(item.amount) || 0,
+                            ratio: Number(item.ratio),
+                            memo: item.memo !== undefined && item.memo !== null ? String(item.memo) : ''
+                        };
+                    });
+                    loading.style.display = 'none';
+                    renderList();
+                })
+                .catch(err => {
+                    console.error(err);
+                    loading.style.display = 'none';
+                });
+        }
+
+        function editItem(id) {
+            const item = items.find(i => String(i.id) === String(id));
+            if (!item) return;
+
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('modal-date').value = item.date || '';
+            document.getElementById('modal-date-display').value = item.date || '';
+            document.getElementById('modal-title').value = item.title;
+            document.getElementById('modal-payer').value = item.payer;
+            document.getElementById('modal-amount').value = item.amount || '';
+            document.getElementById('modal-ratio').value = item.ratio;
+            document.getElementById('modal-memo').value = item.memo;
+
+            document.getElementById('edit-modal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').style.display = 'none';
+            document.getElementById('edit-id').value = '';
+        }
+
+        function saveItem(isModal = false) {
+            const prefix = isModal ? 'modal-' : '';
+            const editId = isModal ? document.getElementById('edit-id').value : '';
+            const date = document.getElementById(prefix + 'date').value;
+            const title = document.getElementById(prefix + 'title').value;
+            const payer = document.getElementById(prefix + 'payer').value;
+            const amount = parseFloat(document.getElementById(prefix + 'amount').value) || 0;
+            const ratio = parseFloat(document.getElementById(prefix + 'ratio').value);
+            const memo = document.getElementById(prefix + 'memo').value.trim();
+
+            if (title === '固定費' && !memo) {
+                alert('固定費の場合は「支払い先など」を入力してください。');
+                return;
+            }
+
+            // 金額、日付、メモのいずれも入力されていない場合のみ弾く
+            if (amount <= 0 && !memo && !date) {
+                alert('金額、日付、または支払い先などのいずれかを入力してください。');
+                return;
+            }
+
+            const id = editId ? editId : String(Date.now());
+            const payload = { action: 'save', item: { id, date, title, payer, amount, ratio, memo } };
+
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
+
+            fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(() => {
+                loading.style.display = 'none';
+                
+                if (isModal) {
+                    closeEditModal();
+                } else {
+                    document.getElementById('amount').value = '';
+                    document.getElementById('memo').value = '';
+                    document.getElementById('date').value = '';
+                    document.getElementById('date-display').value = '';
+                }
+                
+                switchTab('list');
+            })
+            .catch(err => {
+                console.error(err);
+                loading.style.display = 'none';
+                alert('保存に失敗しました。');
+            });
+        }
+
+        function deleteCurrentEditItem() {
+            const editId = document.getElementById('edit-id').value;
+            if (!editId) return;
+
+            if (confirm('削除しますか？')) {
+                const loading = document.getElementById('loading');
+                loading.style.display = 'block';
+
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'delete', id: editId })
+                })
+                .then(res => res.json())
+                .then(() => {
+                    loading.style.display = 'none';
+                    closeEditModal();
+                    switchTab('list');
+                })
+                .catch(err => {
+                    console.error(err);
+                    loading.style.display = 'none';
+                    alert('削除に失敗しました。');
+                });
+            }
+        }
+
+        function createRowElement(item) {
+            const requestAmount = item.amount * item.ratio;
+            let ratioText = Math.round(item.ratio * 100) + '%';
+            if (Math.abs(item.ratio - 1/3) < 0.001 || item.ratio === 0.33) {
+                ratioText = '33%';
+            }
+
+            let shortDate = item.date || '';
+            if (item.date && item.date.includes('-')) {
+                const parts = item.date.split('-');
+                if (parts.length === 3) {
+                    shortDate = `${parts[1]}/${parts[2]}`;
+                }
+            }
+
+            const displayTitle = item.title === '固定費' ? '-' : item.title;
+            // 行の幅設定に応じてパディングを変更（ふつう: py-0.5 / 広い: py-1.5）
+            const paddingClass = (rowHeight === 'wide') ? 'py-1.5 px-0.5' : 'py-0.5 px-0.5';
+
+            const tr = document.createElement('tr');
+            tr.className = "border-b hover:bg-gray-50";
+            tr.innerHTML = `
+                <td class="${paddingClass} whitespace-nowrap">${shortDate}</td>
+                <td class="${paddingClass} whitespace-nowrap font-medium">${displayTitle}</td>
+                <td class="${paddingClass} text-right max-w-[70px] truncate whitespace-nowrap">¥${item.amount.toLocaleString()}</td>
+                <td class="${paddingClass} text-center whitespace-nowrap">${ratioText}</td>
+                <td class="${paddingClass} text-right whitespace-nowrap font-semibold">¥${Math.round(requestAmount).toLocaleString()}</td>
+                <td class="${paddingClass} text-gray-500 text-[10px] max-w-[100px] truncate" title="${item.memo || ''}">${item.memo || ''}</td>
+                <td class="${paddingClass} text-center whitespace-nowrap"><button type="button" onclick="editItem('${item.id}')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[10px]" title="編集">✏️</button></td>
+            `;
+            return tr;
+        }
+
+        function createFixedHeaderRow() {
+            const paddingClass = (rowHeight === 'wide') ? 'py-1.5 px-2' : 'py-1 px-2';
+            const tr = document.createElement('tr');
+            tr.className = "bg-emerald-100 border-b"; // この背景色が優先されます
+            tr.innerHTML = `
+                <td colspan="7" class="${paddingClass} text-emerald-800 font-bold text-left">固定費</td>
+            `;
+            return tr;
+        }
+
+
+        function renderList() {
+            const viewList = document.getElementById('view-list');
+            const chitaCard = document.getElementById('chita-card');
+            const akitaCard = document.getElementById('akita-card');
+
+            if (displayOrder === 'akita') {
+                viewList.appendChild(akitaCard);
+                viewList.appendChild(chitaCard);
+            } else {
+                viewList.appendChild(chitaCard);
+                viewList.appendChild(akitaCard);
+            }
+
+            const chitaTbody = document.getElementById('chita-tbody');
+            const akitaTbody = document.getElementById('akita-tbody');
+            chitaTbody.innerHTML = '';
+            akitaTbody.innerHTML = '';
+
+            const sortByDate = (a, b) => {
+                if (!a.date && !b.date) return 0;
+                if (!a.date) return 1;
+                if (!b.date) return -1;
+                return a.date.localeCompare(b.date);
+            };
+
+            const targetMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+            const filteredItems = items.filter(item => {
+                if (!item.date) {
+                    const today = new Date();
+                    return today.getFullYear() === currentYear && (today.getMonth() + 1) === currentMonth;
+                }
+                return item.date.startsWith(targetMonthStr);
+            });
+
+            const chitaVariable = filteredItems.filter(i => i.payer === 'ちーた' && i.title !== '固定費').sort(sortByDate);
+            const chitaFixed = filteredItems.filter(i => i.payer === 'ちーた' && i.title === '固定費').sort(sortByDate);
+
+            const akitaVariable = filteredItems.filter(i => i.payer === 'あきた' && i.title !== '固定費').sort(sortByDate);
+            const akitaFixed = filteredItems.filter(i => i.payer === 'あきた' && i.title === '固定費').sort(sortByDate);
+
+            let chitaCredit = 0;
+            let akitaCredit = 0;
+
+            if (chitaVariable.length === 0 && chitaFixed.length === 0) {
+                chitaTbody.innerHTML = '<tr><td colspan="7" class="text-center p-3 text-gray-400">データなし</td></tr>';
+            } else {
+                chitaVariable.forEach(item => {
+                    chitaCredit += item.amount * item.ratio;
+                    chitaTbody.appendChild(createRowElement(item));
+                });
+
+                if (chitaFixed.length > 0) {
+                    chitaTbody.appendChild(createFixedHeaderRow());
+                    chitaFixed.forEach(item => {
+                        chitaCredit += item.amount * item.ratio;
+                        chitaTbody.appendChild(createRowElement(item));
+                    });
+                }
+            }
+
+            if (akitaVariable.length === 0 && akitaFixed.length === 0) {
+                akitaTbody.innerHTML = '<tr><td colspan="7" class="text-center p-3 text-gray-400">データなし</td></tr>';
+            } else {
+                akitaVariable.forEach(item => {
+                    akitaCredit += item.amount * item.ratio;
+                    akitaTbody.appendChild(createRowElement(item));
+                });
+
+                if (akitaFixed.length > 0) {
+                    akitaTbody.appendChild(createFixedHeaderRow());
+                    akitaFixed.forEach(item => {
+                        akitaCredit += item.amount * item.ratio;
+                        akitaTbody.appendChild(createRowElement(item));
+                    });
+                }
+            }
+
+            document.getElementById('chita-total').innerText = '¥' + Math.round(chitaCredit).toLocaleString();
+            document.getElementById('akita-total').innerText = '¥' + Math.round(akitaCredit).toLocaleString();
+
+            const diff = chitaCredit - akitaCredit;
+            const resultText = document.getElementById('result-text');
+
+            if (diff > 0) {
+                resultText.innerHTML = `あきたがちーたに <span class="text-rose-700 font-extrabold text-lg">¥${Math.round(diff).toLocaleString()}</span> 支払う`;
+            } else if (diff < 0) {
+                resultText.innerHTML = `ちーたがあきたに <span class="text-rose-700 font-extrabold text-lg">¥${Math.round(Math.abs(diff)).toLocaleString()}</span> 支払う`;
+            } else {
+                resultText.innerHTML = `現在、精算の差額はありません`;
+            }
+        }
+    </script>
+</body>
+</html>
