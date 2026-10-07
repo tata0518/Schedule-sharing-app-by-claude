@@ -61,6 +61,29 @@
         .max-w-xl.mx-auto {
             padding-bottom: 90px;
         }
+
+        /* ▼ 支払い先の候補チップ ▼ */
+        .memo-chip {
+            font-size: 11px;
+            line-height: 1.2;
+            padding: 5px 10px;
+            border-radius: 9999px;
+            border: 1px solid #bfdbfe;
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+        .memo-chip:active { background-color: #dbeafe; }
+        .memo-chip.active {
+            background-color: #2563eb;
+            border-color: #2563eb;
+            color: #ffffff;
+        }
     </style>
 </head>
     
@@ -150,7 +173,12 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">支払い先など</label>
-                        <input type="text" id="memo" placeholder="例：マルエツ中野若宮店" class="w-full border rounded-lg p-2 text-sm">
+                        <input type="text" id="memo" placeholder="例：マルエツ中野若宮店" class="w-full border rounded-lg p-2 text-sm" oninput="updateChipActive('memo')">
+                        <!-- よく使う支払い先（上位5件） -->
+                        <div id="memo-suggest-wrap" class="mt-2" style="display: none;">
+                            <div class="text-[10px] text-gray-400 mb-1">よく使う支払い先（タップで入力）</div>
+                            <div id="memo-suggest" class="flex flex-wrap gap-1.5"></div>
+                        </div>
                     </div>
                     
                     <!-- 登録ボタン -->
@@ -316,7 +344,12 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-600 mb-1">支払い先など</label>
-                <input type="text" id="modal-memo" placeholder="例：マルエツ中野若宮店" class="w-full border rounded-lg p-2 text-sm">
+                <input type="text" id="modal-memo" placeholder="例：マルエツ中野若宮店" class="w-full border rounded-lg p-2 text-sm" oninput="updateChipActive('modal-memo')">
+                <!-- よく使う支払い先（上位5件） -->
+                <div id="modal-memo-suggest-wrap" class="mt-2" style="display: none;">
+                    <div class="text-[10px] text-gray-400 mb-1">よく使う支払い先（タップで入力）</div>
+                    <div id="modal-memo-suggest" class="flex flex-wrap gap-1.5"></div>
+                </div>
             </div>
             
             <div class="space-y-2 pt-1">
@@ -355,6 +388,66 @@
 
         document.body.classList.add('no-scroll');
         fetchData();
+
+        // ===== 支払い先の候補（使用頻度 上位5件） =====
+        // 全データから「支払い先など」の使用回数を集計し、多い順（同数なら新しい順）に上位n件を返す
+        function getTopMemos(n = 5) {
+            const stats = {};
+            items.forEach(item => {
+                const m = (item.memo || '').trim();
+                if (!m) return;
+                if (!stats[m]) stats[m] = { memo: m, count: 0, last: '' };
+                stats[m].count++;
+                // 新しさの判定：日付 + id（idは登録時刻のミリ秒）
+                const key = (item.date || '') + '|' + String(item.id).padStart(16, '0');
+                if (key > stats[m].last) stats[m].last = key;
+            });
+            return Object.values(stats)
+                .sort((a, b) => (b.count - a.count) || b.last.localeCompare(a.last))
+                .slice(0, n)
+                .map(s => s.memo);
+        }
+
+        // 候補チップを描画（新規入力欄・編集モーダルの両方）
+        function renderMemoSuggestions() {
+            const top = getTopMemos(5);
+            [
+                { inputId: 'memo', wrapId: 'memo-suggest-wrap', boxId: 'memo-suggest' },
+                { inputId: 'modal-memo', wrapId: 'modal-memo-suggest-wrap', boxId: 'modal-memo-suggest' }
+            ].forEach(cfg => {
+                const wrap = document.getElementById(cfg.wrapId);
+                const box = document.getElementById(cfg.boxId);
+                box.innerHTML = '';
+                if (top.length === 0) {
+                    wrap.style.display = 'none';
+                    return;
+                }
+                wrap.style.display = 'block';
+                top.forEach(memo => {
+                    const chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.className = 'memo-chip';
+                    chip.textContent = memo;
+                    chip.dataset.memo = memo;
+                    chip.addEventListener('click', () => {
+                        document.getElementById(cfg.inputId).value = memo;
+                        updateChipActive(cfg.inputId);
+                    });
+                    box.appendChild(chip);
+                });
+                updateChipActive(cfg.inputId);
+            });
+        }
+
+        // 入力内容と一致するチップを強調表示
+        function updateChipActive(inputId) {
+            const val = document.getElementById(inputId).value.trim();
+            const box = document.getElementById(inputId + '-suggest');
+            if (!box) return;
+            box.querySelectorAll('.memo-chip').forEach(chip => {
+                chip.classList.toggle('active', chip.dataset.memo === val);
+            });
+        }
 
         // 設定モーダル制御
         function openSettingsModal() {
@@ -505,6 +598,7 @@
                     });
                     loading.style.display = 'none';
                     renderList();
+                    renderMemoSuggestions();
                 })
                 .catch(err => {
                     console.error(err);
@@ -524,6 +618,7 @@
             document.getElementById('modal-amount').value = item.amount || '';
             document.getElementById('modal-ratio').value = item.ratio;
             document.getElementById('modal-memo').value = item.memo;
+            updateChipActive('modal-memo');
 
             document.getElementById('edit-modal').style.display = 'flex';
         }
@@ -575,6 +670,7 @@
                     document.getElementById('memo').value = '';
                     document.getElementById('date').value = '';
                     document.getElementById('date-display').value = '';
+                    updateChipActive('memo');
                 }
                 
                 switchTab('list');
