@@ -45,6 +45,7 @@ header button{background:#fff;border:1px solid var(--bd);padding:4px 8px;border-
 .ptext{flex:1;display:flex;align-items:center;gap:4px;overflow:hidden;word-break:break-all;min-width:0}
 .ptag{font-weight:bold;padding:0 3px;border-radius:2px;font-size:11px;flex-shrink:0}
 .ptag.chita{background:var(--chita-bg);color:var(--chita)}.ptag.akita{background:var(--akita-bg);color:var(--akita)}
+.lbl{display:inline-block;background:#eee;color:#666;font-size:10px;padding:0 3px;margin:0 2px 0 4px;border-radius:2px;line-height:1.3}
 /* 入力行(部分編集・一括編集で共通) */
 .eline{display:flex;gap:3px;width:100%}
 .eline input,.eline select{font-size:11px;padding:3px 2px;border:1px solid var(--bd);border-radius:3px;background:#fff;min-width:0;flex:1}
@@ -356,8 +357,9 @@ function renderMonth() {
 
 // ============ 週表示 ============
 function personText(p, hol) {
-  if (hol) return `${esc(p.plan)} / 出:${esc(p.departTime) || '-'} 帰:${esc(p.returnTime) || '-'} / 昼:${esc(p.lunch) || '-'} 夕:${esc(p.dinner) || '-'}`;
-  return p.plan ? `${esc(p.plan)} / 帰:${esc(p.returnTime) || '-'} / 夕:${esc(p.dinner) || '-'}` : '未登録';
+  const L = (name, v) => `<span class="lbl">${name}</span>${esc(v) || '-'}`;
+  if (hol) return `${esc(p.plan)} / ${L('出', p.departTime)} ${L('帰', p.returnTime)} / ${L('昼', p.lunch)} ${L('夕', p.dinner)}`;
+  return p.plan ? `${esc(p.plan)} / ${L('帰', p.returnTime)} / ${L('夕', p.dinner)}` : '未登録';
 }
 
 // 入力欄(部分編集・一括編集で共通)。ID = モード_日付_人_項目
