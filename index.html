@@ -1,8 +1,7 @@
-<!DOCTYPE html>
-<html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- ① viewport-fit=cover を追加 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>あきた＆ちーた</title>
 <link rel="icon" href="./favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="./favicon.png">
@@ -13,13 +12,27 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f5f5f5}
 .frames{flex:1;position:relative;min-height:0}
 iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;background:#f5f5f5}
 iframe.active{display:block}
-nav{display:flex;height:90px;background:#fff;border-top:1px solid #ccc;flex-shrink:0}
+
+/* ② nav の高さを固定しつつ、下部にセーフエリア分の余白を追加する */
+nav{
+  display:flex;
+  height:64px; 
+  /* ウェブアプリの時だけ自動で下部に余白を追加（通常ブラウザでは0pxになります） */
+  padding-bottom: env(safe-area-inset-bottom);
+  /* padding分を含めて高さを調整したい場合は box-sizing が効いているのでそのままでOKですが、
+     ボタンを縦に少し大きくしたい場合は height を 64px + α に調整してください */
+  background:#fff;
+  border-top:1px solid #ccc;
+  flex-shrink:0;
+}
+
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:none;color:#777;font-size:12px;cursor:pointer}
 .tab span{font-size:20px;margin-bottom:2px}
 .tab.sep{border-left:1px solid #ddd}
 .tab.active{color:#333;font-weight:bold;background:#fafafa}
 </style>
 </head>
+
 <body>
 <div id="root">
   <div class="frames">
