@@ -376,20 +376,22 @@ function renderWeek() {
   const box = $('weekBox');
   box.innerHTML = '';
 
-  days.forEach((dt, i) => {
+  days.forEach(dt => {
     const k = keyOf(dt), dd = data[k] || {};
     const hol = isHoliday(dt);
     const cls = dt.getDay() === 6 ? 'sat' : dt.getDay() === 0 ? 'sun' : hol ? 'holiday' : '';
     const c = dd.chita || {}, a = dd.akita || {};
+
     const row = document.createElement('div');
     row.className = 'wrow';
-
-    const inner = `
-      <div class="prow"><span class="ptag chita">ちーた</span><div class="ptext"><span>${personText(c, hol)}</span></div></div>
-      <div class="prow"><span class="ptag akita">あきた</span><div class="ptext"><span>${personText(a, hol)}</span></div></div>
-      <div class="prow" style="font-size:11px;color:#666"><b style="flex-shrink:0">メニュー:</b><div class="ptext"><span>${esc(dd.menu) || '未設定'}</span></div></div>`;
-    row.innerHTML = `<div class="wdate ${cls}"><span>${dt.getMonth() + 1}/${dt.getDate()}</span><span>(${DOW[dt.getDay()]})</span></div>
-      <div class="wdata">${inner}</div>`;
+    row.innerHTML = `
+      <div class="wdate ${cls}"><span>${dt.getMonth() + 1}/${dt.getDate()}</span><span>(${DOW[dt.getDay()]})</span></div>
+      <div class="wdata">
+        <div class="prow"><span class="ptag chita">ちーた</span><div class="ptext"><span>${personText(c, hol)}</span></div></div>
+        <div class="prow"><span class="ptag akita">あきた</span><div class="ptext"><span>${personText(a, hol)}</span></div></div>
+        <div class="prow" style="font-size:11px;color:#666"><b style="flex-shrink:0">メニュー:</b><div class="ptext"><span>${esc(dd.menu) || '未設定'}</span></div></div>
+      </div>`;
+    box.appendChild(row);
   });
 }
 
