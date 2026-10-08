@@ -169,7 +169,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">支払い先など</label>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">支払い先</label>
                         <input type="text" id="memo"  class="w-full border rounded-lg p-2 text-sm" oninput="updateChipActive('memo')">
                         <!-- よく使う支払い先（上位5件） -->
                         <div id="memo-suggest-wrap" class="mt-2" style="display: none;">
@@ -204,7 +204,7 @@
                                     <th class="py-1 px-0.5 whitespace-nowrap">金額</th>
                                     <th class="py-1 px-0.5 whitespace-nowrap">割合</th>
                                     <th class="py-1 px-0.5 whitespace-nowrap">請求額</th>
-                                    <th class="py-1 px-0.5 w-full">支払い先など</th>
+                                    <th class="py-1 px-0.5 w-full">支払い先</th>
                                     <th class="py-1 px-0.5 text-center whitespace-nowrap w-1"></th>
                                 </tr>
                             </thead>
@@ -344,7 +344,7 @@
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1">支払い先など</label>
+                <label class="block text-xs font-bold text-gray-600 mb-1">支払い先</label>
                 <input type="text" id="modal-memo" class="w-full border rounded-lg p-2 text-sm" oninput="updateChipActive('modal-memo')">
                 <!-- よく使う支払い先（上位5件） -->
                 <div id="modal-memo-suggest-wrap" class="mt-2" style="display: none;">
@@ -648,7 +648,7 @@
             const note = document.getElementById(prefix + 'note').value.trim();
 
             if (title === '固定費' && !memo) {
-                alert('固定費の場合は「支払い先など」を入力してください。');
+                alert('固定費の場合は「支払い先」を入力してください。');
                 return;
             }
 
