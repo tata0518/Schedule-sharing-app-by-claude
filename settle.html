@@ -230,7 +230,7 @@
                                     <th class="py-1 px-0.5 whitespace-nowrap">金額</th>
                                     <th class="py-1 px-0.5 whitespace-nowrap">割合</th>
                                     <th class="py-1 px-0.5 whitespace-nowrap">請求額</th>
-                                    <th class="py-1 px-0.5 w-full">支払い先など</th>
+                                    <th class="py-1 px-0.5 w-full">支払い先</th>
                                     <th class="py-1 px-0.5 text-center whitespace-nowrap w-1"></th>
                                 </tr>
                             </thead>
@@ -654,7 +654,7 @@
 
             // 金額、日付、メモのいずれも入力されていない場合のみ弾く
             if (amount <= 0 && !memo && !date) {
-                alert('金額、日付、または支払い先などのいずれかを入力してください。');
+                alert('金額、日付、または支払い先のいずれかを入力してください。');
                 return;
             }
 
