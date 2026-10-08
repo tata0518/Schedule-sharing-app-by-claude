@@ -443,17 +443,26 @@ function openDetail(dt) {
   const hol = isHoliday(dt), name = holidayName(dt);
   const c = dd.chita || {}, a = dd.akita || {};
   $('detailTitle').textContent = `${dt.getMonth() + 1}月${dt.getDate()}日(${DOW[dt.getDay()]})${name ? ` (${name})` : ''} の詳細`;
+  
+  // 各行の余白（line-height や margin）を広げたテンプレート
   const person = (who, p) => {
-    let h = `<div>予定: ${esc(p.plan) || '-'}</div>`;
-    if (hol) h += `<div>出発: ${esc(p.departTime) || '-'} / 帰宅: ${esc(p.returnTime) || '-'}</div><div>昼食: ${esc(p.lunch) || '-'} / 夕食: ${esc(p.dinner) || '-'}</div>`;
-    else h += `<div>帰宅時刻: ${esc(p.returnTime) || '-'}</div><div>夕食要否: ${esc(p.dinner) || '-'}</div>`;
-    return `<div style="margin-bottom:10px"><div style="color:var(--${who.cls});font-weight:bold">● ${who.tag}</div>${h}</div>`;
+    let h = `<div style="margin-top: 4px;">予定：${esc(p.plan) || '-'}</div>`;
+    if (hol) {
+      h += `<div style="margin-top: 4px;">出発：${esc(p.departTime) || '-'} ／ 帰宅：${esc(p.returnTime) || '-'}</div>` +
+           `<div style="margin-top: 4px;">昼食：${esc(p.lunch) || '-'} ／ 夕食：${esc(p.dinner) || '-'}</div>`;
+    } else {
+      h += `<div style="margin-top: 4px;">帰宅時刻：${esc(p.returnTime) || '-'}</div>` +
+           `<div style="margin-top: 4px;">夕食要否：${esc(p.dinner) || '-'}</div>`;
+    }
+    return `<div style="margin-bottom: 16px; line-height: 1.5;"><div style="color:var(--${who.cls}); font-weight: bold; font-size: 13px;">● ${who.tag}</div>${h}</div>`;
   };
+
   $('detailBody').innerHTML = person(CH, c) + person(AK, a) + `
-    <div style="border-top:1px solid #eee;padding-top:6px">
-      <div><b>夕食メニュー:</b> ${esc(dd.menu)}</div>
-      <div><b>備考:</b> ${esc(dd.memo)}</div>
+    <div style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 8px; line-height: 1.6;">
+      <div style="margin-bottom: 6px;"><b>夕食メニュー：</b> ${esc(dd.menu) || '-'}</div>
+      <div><b>備考：</b> ${esc(dd.memo) || '-'}</div>
     </div>`;
+    
   window.detailDate = dt;
   $('detailModal').classList.add('open');
 }
